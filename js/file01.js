@@ -1,6 +1,9 @@
 "use strict";
 
 // 1. Al inicio del documento js/file01.js, importe la función fetchProducts desde functions.js.
+import { saveVote } from './firebase.js';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9/firebase-app.js";
+import { getDatabase, ref, set, push } from "https://www.gstatic.com/firebasejs/9/firebase-database.js";
 import { fetchProducts, fetchCategories } from './functions.js';
 // --- Cliente de IAG: Función de Auto-Ejecución (IIFE) ---
 // La IIFE original que ejecuta el código al cargar.
@@ -204,6 +207,66 @@ const renderCategories = async () => {
     }
 };
 
+
+// 2.a. Define la función flecha enableForm (antes de la función de autoejecución).
+/**
+ * Inicializa el manejo del formulario de votación, capturando el evento submit.
+ * @returns {void} No devuelve ningún valor.
+ */
+const enableForm = () => {
+    // Obtenga una referencia al formulario HTML con el identificador 'form_voting'.
+    const formVoting = document.getElementById('form_voting');
+
+    if (!formVoting) {
+        console.error("No se encontró el formulario con el ID 'form_voting'.");
+        return;
+    }
+
+    // 2.c. Con la referencia al formulario, utilice addEventListener para el evento 'submit'
+    formVoting.addEventListener('submit', (event) => {
+        
+        // 2.c.i. Use el evento del callback para prevenir el comportamiento por defecto del formulario.
+        event.preventDefault();
+
+        // 2.c.ii. Obtenga la referencia al elemento con identificador 'select_product' y extraiga el valor.
+        const selectProductElement = document.getElementById('select_product');
+        
+        if (!selectProductElement) {
+             alert('Error: No se encontró el campo de selección del producto.');
+             return;
+        }
+
+        const productID = selectProductElement.value;
+        
+        // Comprobación simple para evitar votos vacíos
+        if (productID === 'Seleccione una categoría') { 
+            alert('Por favor, seleccione un producto válido antes de votar.');
+            return;
+        }
+
+        // 2.c.iii. Llame a la función saveVote con el valor obtenido.
+        // Maneje la promesa y muestre el resultado con un mensaje de alerta.
+        // *Nota: Aquí pasamos 'db', 'ref', 'set', 'push' como dependencias a saveVote
+        saveVote(productID, db, ref, set, push) 
+            .then(result => {
+                alert(`Resultado de la votación: ${result.message}`);
+                console.log('Resultado de Firebase:', result);
+                
+                // Opcional: Reiniciar el formulario después de un éxito
+                if (result.state === 'success') {
+                    formVoting.reset();
+                }
+            })
+            .catch(error => {
+                // Manejo de errores de red o errores internos no capturados por saveVote
+                alert(`Ocurrió un error inesperado al votar: ${error.message}`);
+                console.error('Error en la promesa de saveVote:', error);
+            });
+    });
+    
+    console.log("Manejador de submit para 'form_voting' inicializado.");
+};
+
 // --- Invocación de las funciones ---
 
 /**
@@ -218,4 +281,6 @@ const renderCategories = async () => {
 
     // Llama a la función que trae los datos de la API
     renderProducts();
+    renderCategories();
+    enableForm();
 })();
